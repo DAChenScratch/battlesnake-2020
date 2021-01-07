@@ -8,10 +8,9 @@ mode = 'TEST'
 
 @bottle.route('/')
 def index():
-    return '''
-    Battlesnake documentation can be found at
-       <a href="https://docs.battlesnake.com">https://docs.battlesnake.com</a>.
-    '''
+    return {
+        'apiversion':'1'
+    }
 
 
 @bottle.route('/static/<path:path>')
@@ -77,8 +76,16 @@ def move():
     TODO: Using the data from the endpoint request object, your
             snake AI must choose a direction to move in.
     """
-
-    return move_response(dir_str)
+    mymove = move_response(dir_str)
+    if mymove['move'] == 'up':
+        return {
+            'move':'down'
+        }
+    elif mymove['move'] == 'down':
+        return {
+            'move':'up'
+        }
+    return mymove
 
 
 @bottle.post('/end')
