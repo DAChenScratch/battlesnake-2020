@@ -1,111 +1,102 @@
-import bottle
+import os
 from tools.mapper import apigamestate_to_simu
 from service.snake_controller import *
 from api_model.apigamestate import *
 from api import ping_response, start_response, move_response, end_response
-
 mode = 'TEST'
+import cherrypy
 
-@bottle.route('/')
-def index():
-    return {
-        'apiversion':'1'
-    }
-
-
-@bottle.route('/static/<path:path>')
-def static(path):
-    """
-    Given a path, return the static file located relative
-    to the static folder.
-
-    This can be used to return the snake head URL in an API response.
-    """
-    return bottle.static_file(path, root='static/')
+"""
+This is a simple Battlesnake server written in Python.
+For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
+"""
 
 
-@bottle.post('/ping')
-def ping():
-    """
-    A keep-alive endpoint used to prevent cloud application platforms,
-    such as Heroku, from sleeping the application instance.
-    """
-    return ping_response()
-
-
-@bottle.post('/start')
-def start():
-    data = bottle.request.json
-    """
-    TODO: If you intend to have a stateful snake AI,
-            initialize your snake state here using the
-            request's data if necessary.
-    """
-
-    color = "#9933ff"
-    headtype = "pixel"
-    tailtype = "pixel"
-
-    return start_response(color, headtype, tailtype)
-
-
-@bottle.post('/move')
-def move():
-    data = bottle.request.json
-    gamestate = APIGameState(data)
-    controller = SnakeController(ControllerMode.ALGO)
-    if mode == 'NN':
-        pass
-    else:
-        direction = controller.move(gamestate)
-        dir_str = ""
-        if direction == Direction.UP:
-            dir_str = 'up'
-        elif direction == Direction.DOWN:
-            dir_str = 'down'
-        elif direction == Direction.LEFT:
-            dir_str = 'left'
-        elif direction == Direction.RIGHT:
-            dir_str = 'right'
-        else:
-            return Direction.NONE
-        guiboard = apigamestate_to_simu(gamestate)
-        guiboard.render()
-
-    """
-    TODO: Using the data from the endpoint request object, your
-            snake AI must choose a direction to move in.
-    """
-    mymove = move_response(dir_str)
-    if mymove['move'] == 'up':
+class Battlesnake(object):
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def index(self):
+        # This function is called when you register your Battlesnake on play.battlesnake.com
+        # It controls your Battlesnake appearance and author permissions.
+        # TIP: If you open your Battlesnake URL in browser you should see this data
         return {
-            'move':'down'
+          'apiversion':'1',
+          'head':'smile',
+          'tail':'block-bum',
+          'author':'DAChenScratch',
+          'color':'#ffd966',
         }
-    elif mymove['move'] == 'down':
-        return {
-            'move':'up'
-        }
-    return mymove
+        
+
+    @cherrypy.expose
+    @cherrypy.tools.json_in()
+    def start(self):
+        # This function is called everytime your snake is entered into a game.
+        # cherrypy.request.json contains information about the game that's about to be played.
+        data = cherrypy.request.json
+
+        print("START")
+        return "ok"
+
+    @cherrypy.expose
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    def move(self):
+        # This function is called on every turn of a game. It's how your snake decides where to move.
+        # Valid moves are "up", "down", "left", or "right".
+        # TODO: Use the information in cherrypy.request.json to decide your next move.
+      data = cherrypy.request.json
+      gamestate = APIGameState(data)
+      controller = SnakeController(ControllerMode.ALGO)
+      if mode == 'NN':
+          pass
+      else:
+          direction = controller.move(gamestate)
+          dir_str = ""
+          if direction == Direction.UP:
+              dir_str = 'up'
+          elif direction == Direction.DOWN:
+              dir_str = 'down'
+          elif direction == Direction.LEFT:
+              dir_str = 'left'
+          elif direction == Direction.RIGHT:
+              dir_str = 'right'
+          else:
+              return Direction.NONE
+          guiboard = apigamestate_to_simu(gamestate)
+          guiboard.render()
+
+      """
+      TODO: Using the data from the endpoint request object, your
+              snake AI must choose a direction to move in.
+      """
+      mymove = move_response(dir_str)
+      if mymove['move'] == 'up':
+          return {
+              'move':'down'
+          }
+      elif mymove['move'] == 'down':
+          return {
+              'move':'up'
+          }
+      return mymove
+
+    @cherrypy.expose
+    @cherrypy.tools.json_in()
+    def end(self):
+        # This function is called when a game your snake was in ends.
+        # It's purely for informational purposes, you don't have to make any decisions here.
+        data = cherrypy.request.json
+
+        print("END")
+        return "ok"
 
 
-@bottle.post('/end')
-def end():
-    # """
-    # TODO: If your snake AI was stateful,
-    #     clean up any stateful objects here.
-    # """
-    return end_response()
-
-
-# Expose WSGI app (so gunicorn can find it)
-application = bottle.default_app()
-
-if __name__ == '__main__':
-
-    bottle.run(
-        application,
-        host=os.getenv('IP', '0.0.0.0'),
-        port=os.getenv('PORT', '8080'),
-        debug=os.getenv('DEBUG', True),
-        reloader=True
+if __name__ == "__main__":
+    server = Battlesnake()
+    cherrypy.config.update({"server.socket_host": "0.0.0.0"})
+    cherrypy.config.update(
+        {"server.socket_port": int(os.environ.get("PORT", "8080")),}
     )
+    print("Starting Battlesnake Server...")
+    cherrypy.quickstart(server)
