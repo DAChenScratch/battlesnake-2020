@@ -1,8 +1,8 @@
 import os
-from tools.mapper import apigamestate_to_simu
-from service.snake_controller import *
-from api_model.apigamestate import *
-from api import ping_response, start_response, move_response, end_response
+from app.tools.mapper import apigamestate_to_simu
+from app.service.snake_controller import *
+from app.api_model.apigamestate import *
+from app.api import ping_response, start_response, move_response, end_response
 mode = 'TEST'
 import cherrypy
 
