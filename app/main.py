@@ -44,7 +44,7 @@ class Battlesnake(object):
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
     def move(self):
-        data = bottle.request.json
+        data = cherrypy.request.json
         gamestate = APIGameState(data)
         controller = SnakeController(ControllerMode.ALGO)
         if mode == 'NN':
